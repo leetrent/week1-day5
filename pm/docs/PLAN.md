@@ -354,20 +354,40 @@ powershell -ExecutionPolicy Bypass -File .\scripts\stop-windows.ps1
 Connect frontend board operations to backend API and make Kanban persistent.
 
 ### Checklist
-- [ ] Replace local-only board state source with API-backed fetch/update flow
-- [ ] Wire board interactions (move/edit/rename) to backend persistence
-- [ ] Add loading and error UI states for network operations
-- [ ] Keep UI interactions responsive and consistent after API writes
+- [x] Replace local-only board state source with API-backed fetch/update flow
+- [x] Wire board interactions (move/edit/rename) to backend persistence
+- [x] Add loading and error UI states for network operations
+- [x] Keep UI interactions responsive and consistent after API writes
 
 ### Tests
-- [ ] Integration tests for initial board load from API
-- [ ] Integration tests for card edits/moves and column rename persistence
-- [ ] Verify state remains after refresh and restart
+- [x] Integration tests for initial board load from API
+- [x] Integration tests for card edits/moves and column rename persistence
+- [x] Verify state remains after refresh and restart
 - [ ] Negative-path tests for API failures and retry/feedback behavior
 
 ### Success criteria
-- [ ] Board state is persisted and restored correctly
-- [ ] Core Kanban interactions remain stable under API-backed flow
+- [x] Board state is persisted and restored correctly
+- [x] Core Kanban interactions remain stable under API-backed flow
+
+### Part 7 verification refresh (2026-10-25)
+
+Validation run completed to confirm Part 7 remains stable after latest integration changes.
+
+| Check | Expected result | Status (Pass/Fail) | Notes |
+|---|---|---|---|
+| Backend persistence tests | `uv run --directory backend --group dev pytest -q` passes | Pass | 7 passed |
+| Frontend unit integration surfaces | `npm run test:unit -- src/components/KanbanBoard.test.tsx src/components/AuthGate.test.tsx` passes | Pass | 2 files, 7 tests passed |
+| Frontend e2e board integration | `npm run test:e2e -- tests/kanban.spec.ts` passes | Pass | 5 tests passed |
+| Persist after refresh | Board updates survive page reload | Pass | Verified by `keeps board changes after refresh via API persistence` |
+| Login + board integration | Auth gate still works with API-backed board | Pass | Verified by e2e login/logout coverage |
+
+Design decisions update:
+- No new design decisions were introduced during this verification pass.
+- Existing Part 7 implementation remains: optimistic local UI updates with backend sync and user-visible sync/error status in the board header.
+
+**Part 7 current status:** Pass (with one remaining test-hardening item for explicit API failure-path retries/feedback assertions)  
+**Tester:** Copilot agent (automated checks)  
+**Date:** 2026-10-25
 
 ## Part 8: AI connectivity
 
