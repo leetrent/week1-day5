@@ -188,10 +188,50 @@ Add a simple login/logout flow using fixed credentials (`user` / `password`) and
 **Tester:** Copilot agent (automated checks)  
 **Date:** 2026-10-24  
 
+### Part 4 command checklist (copy/paste)
+
+#### Git Bash (Windows) / Linux / macOS
+
+```bash
+# from repo root
+bash ./scripts/start-linux.sh
+
+# verify app + API
+curl http://localhost:8000/health
+curl http://localhost:8000/api/hello
+
+# stop app
+bash ./scripts/stop-linux.sh
+```
+
+#### PowerShell (Windows)
+
+```powershell
+# from repo root
+powershell -ExecutionPolicy Bypass -File .\scripts\start-windows.ps1
+
+# verify app + API
+curl http://localhost:8000/health
+curl http://localhost:8000/api/hello
+
+# stop app
+powershell -ExecutionPolicy Bypass -File .\scripts\stop-windows.ps1
+```
+
+#### Manual UI steps
+
+1. Open `http://localhost:8000/`.
+2. Confirm **Sign in** appears first.
+3. Try invalid credentials: `user` / `wrong-password` and confirm error.
+4. Sign in with `user` / `password` and confirm **Kanban Studio** appears.
+5. Click **Log out** and confirm return to **Sign in**.
+
 ## Part 5: Database modeling
 
 ### Scope
 Define SQLite schema for users + per-user board data persisted as JSON; document the approach and obtain approval before implementation.
+
+Design artifact: `docs/DATABASE_SCHEMA.md`
 
 ### Checklist
 - [ ] Propose schema tables and columns for:
@@ -233,6 +273,80 @@ Implement backend API for reading/updating Kanban per user with auto-creation of
 ### Success criteria
 - [ ] API supports complete board lifecycle operations required by frontend
 - [ ] Database reliably initializes and persists data
+
+### Part 6 manual verification (Pass/Fail)
+
+| Check | Expected result | Status (Pass/Fail) | Notes |
+|---|---|---|---|
+| Backend tests pass | `uv run --directory backend --group dev pytest -q` passes | Pass | 7 passed |
+| DB auto-creates on startup | Missing DB file is created automatically | Pass | `backend/data/pm.db` created during startup |
+| Default user board loads | `GET /api/board/user` returns 200 with board payload | Pass | Includes `columns`, `cards`, `version`, `updated_at` |
+| Board update persists | `PUT /api/board/user` updates board and increments version | Pass | Verified by read -> update -> read flow |
+| Invalid board shape rejected | Invalid payload returns validation error | Pass | Endpoint returns 422 |
+| Existing API endpoints unaffected | `/health` and `/api/hello` still return expected responses | Pass | Verified during Docker validation |
+| Docker workflow still works | Start/build/stop scripts still work end-to-end | Pass | Verified on Windows scripts |
+
+**Part 6 final status:** Pass  
+**Tester:** Copilot agent (automated checks)  
+**Date:** 2026-10-24  
+
+### Part 6 command checklist (copy/paste)
+
+#### Run backend tests
+
+```bash
+uv run --directory backend --group dev pytest -q
+```
+
+#### Start app
+
+Git Bash / Linux / macOS:
+
+```bash
+bash ./scripts/start-linux.sh
+```
+
+PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\start-windows.ps1
+```
+
+#### Verify board read API
+
+```bash
+curl http://localhost:8000/api/board/user
+```
+
+#### Verify board update API (PowerShell)
+
+```powershell
+$boardResp = Invoke-RestMethod -Uri "http://localhost:8000/api/board/user"
+$boardResp.board.columns[0].title = "Manual Test Rename"
+$payload = @{ board = $boardResp.board } | ConvertTo-Json -Depth 20
+Invoke-RestMethod -Method Put -Uri "http://localhost:8000/api/board/user" -ContentType "application/json" -Body $payload
+Invoke-RestMethod -Uri "http://localhost:8000/api/board/user"
+```
+
+#### Verify validation on invalid payload
+
+```bash
+curl -X PUT http://localhost:8000/api/board/user -H "Content-Type: application/json" -d "{\"board\":{\"columns\":[]}}"
+```
+
+#### Stop app
+
+Git Bash / Linux / macOS:
+
+```bash
+bash ./scripts/stop-linux.sh
+```
+
+PowerShell:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\stop-windows.ps1
+```
 
 ## Part 7: Frontend + Backend integration
 

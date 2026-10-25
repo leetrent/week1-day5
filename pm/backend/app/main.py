@@ -1,14 +1,24 @@
+from contextlib import asynccontextmanager
 from pathlib import Path
+import sqlite3
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
+from app.board import BoardResponse, BoardUpdateRequest
+from app.db import get_board_for_user, initialize_database, update_board_for_user
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_DIR = BASE_DIR / "static"
 INDEX_HTML = STATIC_DIR / "index.html"
 
-app = FastAPI(title="PM MVP Backend", version="0.1.0")
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    initialize_database()
+    yield
+
+
+app = FastAPI(title="PM MVP Backend", version="0.1.0", lifespan=lifespan)
 
 
 @app.get("/health")
@@ -19,6 +29,30 @@ def health() -> dict[str, str]:
 @app.get("/api/hello")
 def api_hello() -> dict[str, str]:
     return {"message": "Hello from FastAPI backend"}
+
+
+@app.get("/api/board/{username}", response_model=BoardResponse)
+def get_board(username: str) -> dict[str, object]:
+    normalized_username = username.strip()
+    if not normalized_username:
+        raise HTTPException(status_code=400, detail="Username cannot be empty.")
+
+    try:
+        return get_board_for_user(normalized_username)
+    except sqlite3.Error as error:
+        raise HTTPException(status_code=500, detail=f"Database read failed: {error}") from error
+
+
+@app.put("/api/board/{username}", response_model=BoardResponse)
+def update_board(username: str, payload: BoardUpdateRequest) -> dict[str, object]:
+    normalized_username = username.strip()
+    if not normalized_username:
+        raise HTTPException(status_code=400, detail="Username cannot be empty.")
+
+    try:
+        return update_board_for_user(normalized_username, payload.board)
+    except sqlite3.Error as error:
+        raise HTTPException(status_code=500, detail=f"Database write failed: {error}") from error
 
 
 @app.get("/", include_in_schema=False)

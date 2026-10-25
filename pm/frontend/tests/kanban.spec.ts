@@ -1,6 +1,52 @@
 import { expect, test, type Page } from "@playwright/test";
+import { initialData } from "../src/lib/kanban";
 
-const signIn = async (page: Page) => {
+const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
+
+const installBoardApiMock = async (page: Page) => {
+  let boardState = clone(initialData);
+  let version = 1;
+
+  await page.route("**/api/board/user", async (route, request) => {
+    if (request.method() === "GET") {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          username: "user",
+          board: boardState,
+          version,
+          updated_at: "2026-10-24 00:00:00",
+        }),
+      });
+      return;
+    }
+
+    if (request.method() === "PUT") {
+      const body = request.postDataJSON() as { board: typeof initialData };
+      boardState = clone(body.board);
+      version += 1;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          username: "user",
+          board: boardState,
+          version,
+          updated_at: "2026-10-24 00:00:00",
+        }),
+      });
+      return;
+    }
+
+    await route.fallback();
+  });
+};
+
+const signIn = async (page: Page, options?: { installApiMock?: boolean }) => {
+  if (options?.installApiMock ?? true) {
+    await installBoardApiMock(page);
+  }
   await page.goto("/");
   await page.getByLabel("Username").fill("user");
   await page.getByLabel("Password").fill("password");
@@ -49,6 +95,7 @@ test("moves a card between columns", async ({ page }) => {
 });
 
 test("rejects invalid login and supports logout", async ({ page }) => {
+  await installBoardApiMock(page);
   await page.goto("/");
   await page.getByLabel("Username").fill("user");
   await page.getByLabel("Password").fill("wrong-password");
@@ -63,4 +110,20 @@ test("rejects invalid login and supports logout", async ({ page }) => {
 
   await page.getByRole("button", { name: /log out/i }).click();
   await expect(page.getByRole("heading", { name: "Sign in" })).toBeVisible();
+});
+
+test("keeps board changes after refresh via API persistence", async ({ page }) => {
+  await installBoardApiMock(page);
+  await signIn(page, { installApiMock: false });
+
+  const firstColumn = page.locator('[data-testid^="column-"]').first();
+  const titleInput = firstColumn.getByLabel("Column title");
+  await titleInput.fill("Persisted Title");
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Kanban Studio" })).toBeVisible();
+
+  await expect(page.locator('[data-testid^="column-"]').first().getByLabel("Column title")).toHaveValue(
+    "Persisted Title"
+  );
 });

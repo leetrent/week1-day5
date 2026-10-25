@@ -4,18 +4,22 @@ import { FormEvent, useEffect, useState } from "react";
 import { KanbanBoard } from "@/components/KanbanBoard";
 
 const AUTH_STORAGE_KEY = "pm.authenticated";
+const AUTH_USERNAME_KEY = "pm.username";
 const VALID_USERNAME = "user";
 const VALID_PASSWORD = "password";
 
 export const AuthGate = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [activeUsername, setActiveUsername] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     const hasSession = window.sessionStorage.getItem(AUTH_STORAGE_KEY) === "true";
+    const storedUsername = window.sessionStorage.getItem(AUTH_USERNAME_KEY);
     setIsAuthenticated(hasSession);
+    setActiveUsername(hasSession ? storedUsername || VALID_USERNAME : null);
   }, []);
 
   const handleLogin = (event: FormEvent<HTMLFormElement>) => {
@@ -23,7 +27,9 @@ export const AuthGate = () => {
 
     if (username === VALID_USERNAME && password === VALID_PASSWORD) {
       window.sessionStorage.setItem(AUTH_STORAGE_KEY, "true");
+      window.sessionStorage.setItem(AUTH_USERNAME_KEY, username);
       setIsAuthenticated(true);
+      setActiveUsername(username);
       setError(null);
       setPassword("");
       return;
@@ -34,7 +40,9 @@ export const AuthGate = () => {
 
   const handleLogout = () => {
     window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
+    window.sessionStorage.removeItem(AUTH_USERNAME_KEY);
     setIsAuthenticated(false);
+    setActiveUsername(null);
     setUsername("");
     setPassword("");
     setError(null);
@@ -107,7 +115,7 @@ export const AuthGate = () => {
       <div className="sticky top-0 z-20 border-b border-[var(--stroke)] bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1500px] items-center justify-between px-6 py-3">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--gray-text)]">
-            Signed in as user
+            Signed in as {activeUsername ?? VALID_USERNAME}
           </p>
           <button
             type="button"
@@ -118,7 +126,7 @@ export const AuthGate = () => {
           </button>
         </div>
       </div>
-      <KanbanBoard />
+      <KanbanBoard username={activeUsername ?? VALID_USERNAME} />
     </div>
   );
 };

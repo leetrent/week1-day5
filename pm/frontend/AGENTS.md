@@ -2,7 +2,7 @@
 
 ## Scope
 
-This document describes the current state of the frontend in `frontend/` as it exists before backend and Docker integration work.
+This document describes the current state of the frontend in `frontend/` after backend integration for persistent board data.
 
 ## Current stack
 
@@ -21,27 +21,32 @@ This document describes the current state of the frontend in `frontend/` as it e
   - `layout.tsx`: root layout, metadata, and font wiring.
   - `globals.css`: design tokens and base global styles.
 - `src/components/`
+  - `AuthGate.tsx`: login gate (`user` / `password`) and logout flow.
   - `KanbanBoard.tsx`: top-level board state and drag/drop orchestration.
   - `KanbanColumn.tsx`: column UI, title edit input, empty state, and add-card form mount.
   - `KanbanCard.tsx`: sortable card UI and remove button.
   - `KanbanCardPreview.tsx`: drag overlay preview.
   - `NewCardForm.tsx`: add-card form toggle and submit behavior.
 - `src/lib/`
+  - `api.ts`: backend board API read/write helpers.
   - `kanban.ts`: board/card/column types, seed data, drag move logic, ID generation.
 - `tests/`
-  - `kanban.spec.ts`: Playwright flows for board load, add card, and drag between columns.
+  - `kanban.spec.ts`: Playwright flows for auth, board interactions, and persistence behavior.
+- `src/components/AuthGate.test.tsx`: unit tests for login and logout.
 - `src/components/KanbanBoard.test.tsx`: unit tests for rendering, rename, add/remove card.
 - `src/lib/kanban.test.ts`: unit tests for move logic.
 
 ## State management and data model
 
-- All board state is in-memory React state inside `KanbanBoard`.
+- Board state is managed in `KanbanBoard` and synchronized with backend when a username is provided.
 - Initial state is seeded from `initialData` in `src/lib/kanban.ts`.
 - Data model:
   - `columns: Column[]` (ordered list of columns, each with ordered `cardIds`)
   - `cards: Record<string, Card>` (card entities keyed by id)
-- There is no persistence layer and no API integration yet.
-- Refreshing the page resets state to seed data.
+- Backend integration uses:
+  - `GET /api/board/{username}` for initial load
+  - `PUT /api/board/{username}` for persistence on changes
+- Session state is tracked in `sessionStorage` by `AuthGate`.
 
 ## Current Kanban behavior
 
@@ -54,6 +59,8 @@ This document describes the current state of the frontend in `frontend/` as it e
 - Cards can be created in a specific column via `NewCardForm`.
 - Cards can be removed from a column.
 - Drag interaction uses pointer sensor activation distance and a card overlay preview.
+- Board sync status is shown in the header (`Syncing...` / `Synced`).
+- Save/load failures are surfaced to the user with explicit error text.
 
 ## Current AI chat behavior
 
@@ -74,21 +81,25 @@ This document describes the current state of the frontend in `frontend/` as it e
 ## Testing status
 
 - Unit tests cover:
+  - auth gate login/logout behavior
   - board rendering
   - column rename behavior
   - add/remove card flow
   - card movement logic
 - E2E tests cover:
+  - login and logout flows
+  - invalid credential handling
   - initial board load
   - adding a card
   - moving a card between columns
+  - persistence behavior across refresh (with API mock)
 
 ## Known limitations and assumptions
 
-- Frontend-only demo with no authentication.
-- No backend integration, no data persistence, no multi-user behavior.
+- Login is MVP-only and fixed to one credential pair.
+- Current UI still targets one signed-in user (`user`) in MVP mode.
 - No AI chat surface or structured AI update flow.
-- Board structure is seeded and fixed to one board view in UI.
+- Board shape is still based on seeded defaults, with backend persistence layered on top.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

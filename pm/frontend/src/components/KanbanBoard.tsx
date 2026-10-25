@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -13,11 +13,44 @@ import {
 } from "@dnd-kit/core";
 import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
+import { fetchBoard, saveBoard } from "@/lib/api";
 import { createId, initialData, moveCard, type BoardData } from "@/lib/kanban";
 
-export const KanbanBoard = () => {
+type KanbanBoardProps = {
+  username?: string;
+};
+
+export const KanbanBoard = ({ username }: KanbanBoardProps) => {
   const [board, setBoard] = useState<BoardData>(() => initialData);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
+  const boardRef = useRef(board);
+
+  useEffect(() => {
+    boardRef.current = board;
+  }, [board]);
+
+  useEffect(() => {
+    if (!username) {
+      return;
+    }
+
+    const loadBoard = async () => {
+      setIsSyncing(true);
+      setSyncError(null);
+      try {
+        const payload = await fetchBoard(username);
+        setBoard(payload.board);
+      } catch {
+        setSyncError("Unable to load saved board. Showing local board state.");
+      } finally {
+        setIsSyncing(false);
+      }
+    };
+
+    void loadBoard();
+  }, [username]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -26,6 +59,30 @@ export const KanbanBoard = () => {
   );
 
   const cardsById = useMemo(() => board.cards, [board.cards]);
+
+  const persistBoard = async (nextBoard: BoardData) => {
+    if (!username) {
+      return;
+    }
+    setIsSyncing(true);
+    setSyncError(null);
+    try {
+      const payload = await saveBoard(username, nextBoard);
+      setBoard(payload.board);
+    } catch {
+      setSyncError("Unable to save board changes. Please retry your action.");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const applyBoardUpdate = (updater: (current: BoardData) => BoardData) => {
+    const current = boardRef.current;
+    const next = updater(current);
+    setBoard(next);
+    boardRef.current = next;
+    void persistBoard(next);
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveCardId(event.active.id as string);
@@ -39,14 +96,14 @@ export const KanbanBoard = () => {
       return;
     }
 
-    setBoard((prev) => ({
+    applyBoardUpdate((prev) => ({
       ...prev,
       columns: moveCard(prev.columns, active.id as string, over.id as string),
     }));
   };
 
   const handleRenameColumn = (columnId: string, title: string) => {
-    setBoard((prev) => ({
+    applyBoardUpdate((prev) => ({
       ...prev,
       columns: prev.columns.map((column) =>
         column.id === columnId ? { ...column, title } : column
@@ -56,7 +113,7 @@ export const KanbanBoard = () => {
 
   const handleAddCard = (columnId: string, title: string, details: string) => {
     const id = createId("card");
-    setBoard((prev) => ({
+    applyBoardUpdate((prev) => ({
       ...prev,
       cards: {
         ...prev.cards,
@@ -71,7 +128,7 @@ export const KanbanBoard = () => {
   };
 
   const handleDeleteCard = (columnId: string, cardId: string) => {
-    setBoard((prev) => {
+    applyBoardUpdate((prev) => {
       return {
         ...prev,
         cards: Object.fromEntries(
@@ -121,6 +178,11 @@ export const KanbanBoard = () => {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-4">
+            {username ? (
+              <div className="rounded-full border border-[var(--stroke)] bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-[var(--gray-text)]">
+                {isSyncing ? "Syncing..." : "Synced"}
+              </div>
+            ) : null}
             {board.columns.map((column) => (
               <div
                 key={column.id}
@@ -131,6 +193,9 @@ export const KanbanBoard = () => {
               </div>
             ))}
           </div>
+          {syncError ? (
+            <p className="text-sm font-semibold text-[var(--secondary-purple)]">{syncError}</p>
+          ) : null}
         </header>
 
         <DndContext
