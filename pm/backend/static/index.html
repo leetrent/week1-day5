@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PM MVP - Hello World</title>
+    <style>
+      :root {
+        --accent-yellow: #ecad0a;
+        --primary-blue: #209dd7;
+        --secondary-purple: #753991;
+        --dark-navy: #032147;
+        --gray-text: #888888;
+      }
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #f8f9fc;
+        color: var(--dark-navy);
+      }
+      main {
+        max-width: 760px;
+        margin: 64px auto;
+        background: white;
+        border: 1px solid #e7ebf2;
+        border-top: 6px solid var(--accent-yellow);
+        border-radius: 16px;
+        padding: 24px;
+      }
+      h1 {
+        margin: 0 0 12px;
+      }
+      button {
+        background: var(--secondary-purple);
+        color: white;
+        border: 0;
+        border-radius: 999px;
+        padding: 10px 16px;
+        cursor: pointer;
+      }
+      #api-result {
+        margin-top: 16px;
+        color: var(--gray-text);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Hello from PM MVP scaffolding</h1>
+      <p>
+        This confirms static HTML is served by FastAPI. Use the button to call
+        the backend API endpoint.
+      </p>
+      <button id="api-button" type="button">Call /api/hello</button>
+      <p id="api-result">No API call made yet.</p>
+    </main>
+    <script>
+      const button = document.getElementById("api-button");
+      const result = document.getElementById("api-result");
+
+      button.addEventListener("click", async () => {
+        result.textContent = "Calling API...";
+        try {
+          const response = await fetch("/api/hello");
+          if (!response.ok) {
+            throw new Error("API request failed");
+          }
+          const data = await response.json();
+          result.textContent = `API response: ${data.message}`;
+        } catch (error) {
+          result.textContent = "API call failed.";
+        }
+      });
+    </script>
+  </body>
+</html>
