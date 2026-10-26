@@ -15,4 +15,7 @@ This folder contains Docker start/stop scripts for each target OS.
 
 - Start scripts build the Docker image (`pm-mvp`) and run container
   (`pm-mvp-app`) on port `8000`.
+- Start scripts require a root `.env` file and pass it to Docker using
+  `--env-file` so backend environment variables (including OpenRouter config)
+  are available in the container.
 - Stop scripts stop and remove `pm-mvp-app` if it exists.

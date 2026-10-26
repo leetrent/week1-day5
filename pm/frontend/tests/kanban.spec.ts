@@ -41,6 +41,47 @@ const installBoardApiMock = async (page: Page) => {
 
     await route.fallback();
   });
+
+  await page.route("**/api/ai/board/user", async (route, request) => {
+    if (request.method() !== "POST") {
+      await route.fallback();
+      return;
+    }
+
+    const body = request.postDataJSON() as {
+      message: string;
+      conversation: Array<{ role: "user" | "assistant"; content: string }>;
+    };
+    const normalizedMessage = body.message.toLowerCase();
+    let boardUpdated = false;
+    let reply = "No board changes required.";
+
+    if (normalizedMessage.includes("manual test backlog")) {
+      boardState = {
+        ...boardState,
+        columns: boardState.columns.map((column, index) =>
+          index === 0 ? { ...column, title: "Manual Test Backlog" } : column
+        ),
+      };
+      version += 1;
+      boardUpdated = true;
+      reply = "Done. I renamed the first column to Manual Test Backlog.";
+    }
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        username: "user",
+        model: "openai/gpt-oss-120b",
+        reply,
+        board_updated: boardUpdated,
+        board: boardState,
+        version,
+        updated_at: "2026-10-26 00:00:00",
+      }),
+    });
+  });
 };
 
 const signIn = async (page: Page, options?: { installApiMock?: boolean }) => {
@@ -70,8 +111,10 @@ test("adds a card to a column", async ({ page }) => {
   await expect(firstColumn.getByText("Playwright card")).toBeVisible();
 });
 
-test("moves a card between columns", async ({ page }) => {
+test("moves a card between columns while chat is open", async ({ page }) => {
   await signIn(page);
+  await expect(page.getByRole("heading", { name: "AI Assistant" })).toBeVisible();
+
   const card = page.getByTestId("card-card-1");
   const targetColumn = page.getByTestId("column-col-review");
   const cardBox = await card.boundingBox();
@@ -92,6 +135,40 @@ test("moves a card between columns", async ({ page }) => {
   );
   await page.mouse.up();
   await expect(targetColumn.getByTestId("card-card-1")).toBeVisible();
+});
+
+test("opens chat and receives AI response without board update", async ({ page }) => {
+  await signIn(page);
+
+  await page.getByRole("button", { name: /hide ai chat/i }).click();
+  await expect(page.getByRole("heading", { name: "AI Assistant" })).not.toBeVisible();
+  await page.getByRole("button", { name: /open ai chat/i }).click();
+
+  await page.getByLabel("Message AI assistant").fill("What is 2+2?");
+  await page.getByRole("button", { name: "Send" }).click();
+
+  await expect(page.getByText("No board changes required.")).toBeVisible();
+  await expect(page.locator('[data-testid^="column-"]').first().getByLabel("Column title")).toHaveValue(
+    "Backlog"
+  );
+});
+
+test("applies AI-driven board updates and keeps them after refresh", async ({ page }) => {
+  await signIn(page);
+
+  await page.getByLabel("Message AI assistant").fill("Rename the first column to Manual Test Backlog");
+  await page.getByRole("button", { name: "Send" }).click();
+
+  await expect(page.getByText("Done. I renamed the first column to Manual Test Backlog.")).toBeVisible();
+  await expect(page.locator('[data-testid^="column-"]').first().getByLabel("Column title")).toHaveValue(
+    "Manual Test Backlog"
+  );
+
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Kanban Studio" })).toBeVisible();
+  await expect(page.locator('[data-testid^="column-"]').first().getByLabel("Column title")).toHaveValue(
+    "Manual Test Backlog"
+  );
 });
 
 test("rejects invalid login and supports logout", async ({ page }) => {

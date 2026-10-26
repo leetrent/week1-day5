@@ -395,19 +395,35 @@ Design decisions update:
 Enable backend AI call through OpenRouter using `OPENROUTER_API_KEY` and model `openai/gpt-oss-120b`.
 
 ### Checklist
-- [ ] Add backend client for OpenRouter API calls
-- [ ] Add configuration loader for env variables
-- [ ] Implement minimal test endpoint/service for connectivity
-- [ ] Ensure secrets are never logged
+- [x] Add backend client for OpenRouter API calls
+- [x] Add configuration loader for env variables
+- [x] Implement minimal test endpoint/service for connectivity
+- [x] Ensure secrets are never logged
 
 ### Tests
-- [ ] Connectivity test prompt `2+2` returns successful AI response
-- [ ] Missing/invalid API key path returns clear server error
-- [ ] Timeouts and transient failures are surfaced cleanly
+- [x] Connectivity test prompt `2+2` returns successful AI response
+- [x] Missing/invalid API key path returns clear server error
+- [x] Timeouts and transient failures are surfaced cleanly
 
 ### Success criteria
-- [ ] Backend can reliably call OpenRouter with configured model
-- [ ] Operational errors are explicit and diagnosable
+- [x] Backend can reliably call OpenRouter with configured model
+- [x] Operational errors are explicit and diagnosable
+
+### Part 8 verification (Pass/Fail)
+
+| Check | Expected result | Status (Pass/Fail) | Notes |
+|---|---|---|---|
+| Backend test suite | `uv run --directory backend --group dev pytest -q` passes | Pass | 17 passed |
+| AI smoke endpoint success path | `GET /api/ai/smoke` returns 200 with model, prompt, and response fields | Pass | Verified with ASGI `AsyncClient`; prompt `2+2` returned `4` |
+| OpenRouter direct service check | Backend OpenRouter service returns response for prompt `2+2` | Pass | Returned `2 + 2 = 4.` |
+| Missing key error path | Missing `OPENROUTER_API_KEY` returns clear configuration error | Pass | Covered by `test_load_openrouter_config_requires_api_key` and API error mapping test |
+| Invalid key error path | Invalid API key maps to explicit authentication error text | Pass | Covered by `test_request_chat_completion_maps_invalid_key_to_clear_error` and API mapping test |
+| Timeout and transient failure paths | Timeout returns 504 and transient connection failures return 502 | Pass | Covered by API tests (`timeout` and `transient_failure`) and service-level tests |
+| Docker runtime env wiring | Start scripts pass root `.env` into container as runtime env vars | Pass | Added `--env-file .env` and missing-file guard in all start scripts |
+
+**Part 8 final status:** Pass  
+**Tester:** Copilot agent (automated checks + live OpenRouter connectivity check)  
+**Date:** 2026-10-25
 
 ## Part 9: Structured AI board operations
 
@@ -415,24 +431,41 @@ Enable backend AI call through OpenRouter using `OPENROUTER_API_KEY` and model `
 Send board JSON + user message + conversation history to AI and consume structured response containing chat reply plus optional board update payload.
 
 ### Checklist
-- [ ] Define strict structured output schema
-- [ ] Build prompt payload from:
+- [x] Define strict structured output schema
+- [x] Build prompt payload from:
   - current board JSON
   - user prompt
   - conversation history
-- [ ] Parse and validate structured AI response
-- [ ] Apply optional board update atomically when valid
-- [ ] Persist board changes and return updated state to caller
+- [x] Parse and validate structured AI response
+- [x] Apply optional board update atomically when valid
+- [x] Persist board changes and return updated state to caller
 
 ### Tests
-- [ ] Unit tests for schema validation and parse failures
-- [ ] Tests for response-only path (no board update)
-- [ ] Tests for valid board update path
-- [ ] Tests for invalid AI output (graceful error, no corrupt state)
+- [x] Unit tests for schema validation and parse failures
+- [x] Tests for response-only path (no board update)
+- [x] Tests for valid board update path
+- [x] Tests for invalid AI output (graceful error, no corrupt state)
 
 ### Success criteria
-- [ ] AI responses are consistently parsed into typed structure
-- [ ] Optional board mutations are safe, validated, and persisted
+- [x] AI responses are consistently parsed into typed structure
+- [x] Optional board mutations are safe, validated, and persisted
+
+### Part 9 verification (Pass/Fail)
+
+| Check | Expected result | Status (Pass/Fail) | Notes |
+|---|---|---|---|
+| Backend test suite | `uv run --directory backend --group dev pytest -q` passes | Pass | 26 passed |
+| Structured AI endpoint available | `POST /api/ai/board/{username}` accepts message + conversation and returns structured response | Pass | Added response fields: `reply`, `board_updated`, `board`, `version`, `updated_at` |
+| Prompt payload completeness | AI request includes current board JSON, user prompt, and conversation history | Pass | Implemented in `request_board_assistant_response` message construction |
+| Response-only path | AI response with `board: null` does not mutate persisted board | Pass | Covered by API test `test_ai_board_endpoint_returns_reply_without_board_update` |
+| Board update path | AI response with valid board payload updates DB atomically and increments version | Pass | Covered by API test `test_ai_board_endpoint_persists_valid_board_update` |
+| Invalid AI output handling | Non-JSON / invalid board payloads are rejected with explicit errors and no silent fallback | Pass | Covered by service tests for parse failures and board-integrity validation |
+| Timeout and provider failures | Timeout maps to 504 and provider response failures map to 502 | Pass | Covered by API tests for timeout + bad provider response |
+| Live OpenRouter board-operation check | End-to-end call returns successful structured response | Pass | Verified with prompt `What is 2+2? ... do not change the board`, returned `board_updated=false` |
+
+**Part 9 final status:** Pass  
+**Tester:** Copilot agent (automated checks + live OpenRouter endpoint check)  
+**Date:** 2026-10-25
 
 ## Part 10: Sidebar AI chat UI
 
@@ -440,22 +473,37 @@ Send board JSON + user message + conversation history to AI and consume structur
 Add full sidebar chat experience in frontend, display AI responses, and refresh Kanban when AI returns updates.
 
 ### Checklist
-- [ ] Implement sidebar chat UI with message history display
-- [ ] Connect send-message action to backend AI endpoint
-- [ ] Render assistant response text in chat thread
-- [ ] Detect and apply returned board updates to UI state
-- [ ] Auto-refresh board view after AI-driven updates
-- [ ] Ensure interactions work alongside drag/drop and manual edits
+- [x] Implement sidebar chat UI with message history display
+- [x] Connect send-message action to backend AI endpoint
+- [x] Render assistant response text in chat thread
+- [x] Detect and apply returned board updates to UI state
+- [x] Auto-refresh board view after AI-driven updates
+- [x] Ensure interactions work alongside drag/drop and manual edits
 
 ### Tests
-- [ ] UI tests for chat open/send/receive flow
-- [ ] Integration tests for AI response that updates board
-- [ ] Integration tests for AI response without board update
-- [ ] Regression tests for core Kanban interactions while chat is active
+- [x] UI tests for chat open/send/receive flow
+- [x] Integration tests for AI response that updates board
+- [x] Integration tests for AI response without board update
+- [x] Regression tests for core Kanban interactions while chat is active
 
 ### Success criteria
-- [ ] Sidebar chat works end-to-end with backend AI
-- [ ] Kanban updates from AI are reflected immediately and persist
+- [x] Sidebar chat works end-to-end with backend AI
+- [x] Kanban updates from AI are reflected immediately and persist
+
+### Part 10 verification (Pass/Fail)
+
+| Check | Expected result | Status (Pass/Fail) | Notes |
+|---|---|---|---|
+| Frontend unit tests | `npm run test:unit -- src/components/KanbanBoard.test.tsx` passes | Pass | 5 passed |
+| Frontend e2e tests | `npm run test:e2e -- tests/kanban.spec.ts` passes | Pass | 7 passed |
+| Chat open/send/receive flow | Sidebar can be hidden/opened, user message sent, assistant reply rendered | Pass | Covered by unit + e2e tests |
+| AI no-update integration | AI response without board update leaves board state unchanged | Pass | Covered by unit (`opens chat and shows AI response without board update`) and e2e test |
+| AI update integration | AI response with board update refreshes board UI immediately and persists across refresh | Pass | Covered by unit + e2e tests |
+| Drag/drop regression with chat open | Card movement still works while AI sidebar is open | Pass | Covered by e2e test `moves a card between columns while chat is open` |
+
+**Part 10 final status:** Pass  
+**Tester:** Copilot agent (automated unit + e2e checks)  
+**Date:** 2026-10-26
 
 ## Cross-part quality gates
 

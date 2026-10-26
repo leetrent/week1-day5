@@ -64,9 +64,11 @@ This document describes the current state of the frontend in `frontend/` after b
 
 ## Current AI chat behavior
 
-- There is no AI chat sidebar or chat UI in the current frontend implementation.
-- There are no frontend calls to backend AI endpoints.
-- AI-assisted card operations are not implemented yet.
+- A toggleable AI sidebar is available from the board header (`Open AI chat` / `Hide AI chat`).
+- Chat messages are shown in-thread for both user prompts and assistant replies.
+- Frontend calls backend AI endpoint `POST /api/ai/board/{username}`.
+- AI responses can optionally include board updates; when present, the UI applies returned board state immediately.
+- Drag/drop and manual board editing continue to work while the chat sidebar is open.
 
 ## Styling and design notes
 

@@ -1,10 +1,84 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KanbanBoard } from "@/components/KanbanBoard";
+import { initialData, type BoardData } from "@/lib/kanban";
+
+const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
+
+const installApiMock = (aiResponse?: {
+  reply: string;
+  board_updated: boolean;
+  board: BoardData;
+}) => {
+  let board = clone(initialData);
+  let version = 1;
+
+  return vi.spyOn(global, "fetch").mockImplementation(async (input, init) => {
+    const url = typeof input === "string" ? input : input.toString();
+    const method = init?.method ?? "GET";
+
+    if (url.includes("/api/board/user") && method === "GET") {
+      return new Response(
+        JSON.stringify({
+          username: "user",
+          board,
+          version,
+          updated_at: "2026-10-26 00:00:00",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    if (url.includes("/api/board/user") && method === "PUT" && init?.body) {
+      const payload = JSON.parse(String(init.body)) as { board: BoardData };
+      board = clone(payload.board);
+      version += 1;
+      return new Response(
+        JSON.stringify({
+          username: "user",
+          board,
+          version,
+          updated_at: "2026-10-26 00:00:00",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    if (url.includes("/api/ai/board/user") && method === "POST") {
+      const payload = aiResponse ?? {
+        reply: "No changes needed.",
+        board_updated: false,
+        board,
+      };
+      if (payload.board_updated) {
+        board = clone(payload.board);
+        version += 1;
+      }
+      return new Response(
+        JSON.stringify({
+          username: "user",
+          model: "openai/gpt-oss-120b",
+          reply: payload.reply,
+          board_updated: payload.board_updated,
+          board,
+          version,
+          updated_at: "2026-10-26 00:00:00",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json" } }
+      );
+    }
+
+    return new Response("Not found", { status: 404 });
+  });
+};
 
 const getFirstColumn = () => screen.getAllByTestId(/column-/i)[0];
 
 describe("KanbanBoard", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it("renders five columns", () => {
     render(<KanbanBoard />);
     expect(screen.getAllByTestId(/column-/i)).toHaveLength(5);
@@ -42,5 +116,51 @@ describe("KanbanBoard", () => {
     await userEvent.click(deleteButton);
 
     expect(within(column).queryByText("New card")).not.toBeInTheDocument();
+  });
+
+  it("opens chat and shows AI response without board update", async () => {
+    installApiMock({
+      reply: "No board changes required.",
+      board_updated: false,
+      board: clone(initialData),
+    });
+
+    render(<KanbanBoard username="user" />);
+    await screen.findByRole("heading", { name: "Kanban Studio" });
+
+    await userEvent.click(screen.getByRole("button", { name: /hide ai chat/i }));
+    expect(screen.queryByRole("heading", { name: "AI Assistant" })).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: /open ai chat/i }));
+    expect(screen.getByRole("heading", { name: "AI Assistant" })).toBeInTheDocument();
+
+    await userEvent.type(screen.getByLabelText("Message AI assistant"), "What is 2+2?");
+    await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+    expect(await screen.findByText("No board changes required.")).toBeInTheDocument();
+    expect(screen.getByText("What is 2+2?")).toBeInTheDocument();
+  });
+
+  it("applies AI board updates returned from backend", async () => {
+    const updated = clone(initialData);
+    updated.columns[0].title = "AI Updated Backlog";
+    installApiMock({
+      reply: "Updated the first column.",
+      board_updated: true,
+      board: updated,
+    });
+
+    render(<KanbanBoard username="user" />);
+    await screen.findByRole("heading", { name: "Kanban Studio" });
+
+    await userEvent.type(
+      screen.getByLabelText("Message AI assistant"),
+      "Rename the first column to AI Updated Backlog"
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+    expect(await screen.findByText("Updated the first column.")).toBeInTheDocument();
+    const firstColumnInput = within(getFirstColumn()).getByLabelText("Column title");
+    expect(firstColumnInput).toHaveValue("AI Updated Backlog");
   });
 });
