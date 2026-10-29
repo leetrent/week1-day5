@@ -1,21 +1,43 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { KanbanBoard } from "@/components/KanbanBoard";
 import { initialData, type BoardData } from "@/lib/kanban";
 
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
 
-const installApiMock = (aiResponse?: {
-  reply: string;
-  board_updated: boolean;
-  board: BoardData;
-}) => {
+const installApiMock = (
+  aiResponse?: {
+    reply: string;
+    board_updated: boolean;
+    board: BoardData;
+  },
+  failures: { load?: number; save?: number; ai?: number } = {}
+) => {
   let board = clone(initialData);
   let version = 1;
+  const remainingFailures = { load: 0, save: 0, ai: 0, ...failures };
+
+  const shouldFail = (kind: keyof typeof remainingFailures) => {
+    if (remainingFailures[kind] > 0) {
+      remainingFailures[kind] -= 1;
+      return true;
+    }
+    return false;
+  };
 
   return vi.spyOn(global, "fetch").mockImplementation(async (input, init) => {
     const url = typeof input === "string" ? input : input.toString();
     const method = init?.method ?? "GET";
+
+    if (url.includes("/api/board/user") && method === "GET" && shouldFail("load")) {
+      return new Response("Server error", { status: 500 });
+    }
+    if (url.includes("/api/board/user") && method === "PUT" && shouldFail("save")) {
+      return new Response("Server error", { status: 500 });
+    }
+    if (url.includes("/api/ai/board/user") && method === "POST" && shouldFail("ai")) {
+      return new Response("Server error", { status: 500 });
+    }
 
     if (url.includes("/api/board/user") && method === "GET") {
       return new Response(
@@ -162,5 +184,54 @@ describe("KanbanBoard", () => {
     expect(await screen.findByText("Updated the first column.")).toBeInTheDocument();
     const firstColumnInput = within(getFirstColumn()).getByLabelText("Column title");
     expect(firstColumnInput).toHaveValue("AI Updated Backlog");
+  });
+
+  it("shows an error and keeps the local board when loading fails", async () => {
+    installApiMock(undefined, { load: 1 });
+
+    render(<KanbanBoard username="user" />);
+
+    expect(
+      await screen.findByText("Unable to load saved board. Showing local board state.")
+    ).toBeInTheDocument();
+    expect(screen.getAllByTestId(/column-/i)).toHaveLength(5);
+  });
+
+  it("shows an error when saving fails and clears it after a successful retry", async () => {
+    installApiMock(undefined, { save: 1 });
+
+    render(<KanbanBoard username="user" />);
+    await screen.findByText("Synced");
+
+    const input = within(getFirstColumn()).getByLabelText("Column title");
+    await userEvent.type(input, "!");
+    expect(
+      await screen.findByText("Unable to save board changes. Please retry your action.")
+    ).toBeInTheDocument();
+    expect(input).toHaveValue("Backlog!");
+
+    await userEvent.type(input, "!");
+    await waitFor(() =>
+      expect(
+        screen.queryByText("Unable to save board changes. Please retry your action.")
+      ).not.toBeInTheDocument()
+    );
+    expect(input).toHaveValue("Backlog!!");
+  });
+
+  it("shows a chat error when the AI request fails and leaves the board unchanged", async () => {
+    installApiMock(undefined, { ai: 1 });
+
+    render(<KanbanBoard username="user" />);
+    await screen.findByText("Synced");
+
+    await userEvent.type(screen.getByLabelText("Message AI assistant"), "Rename the first column");
+    await userEvent.click(screen.getByRole("button", { name: "Send" }));
+
+    expect(
+      await screen.findByText("Unable to get an AI response right now. Please retry.")
+    ).toBeInTheDocument();
+    expect(screen.getByText("Rename the first column")).toBeInTheDocument();
+    expect(within(getFirstColumn()).getByLabelText("Column title")).toHaveValue("Backlog");
   });
 });

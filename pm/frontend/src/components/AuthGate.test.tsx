@@ -37,6 +37,16 @@ describe("AuthGate", () => {
     expect(screen.getByRole("button", { name: /log out/i })).toBeInTheDocument();
   });
 
+  it("restores an existing session from sessionStorage", async () => {
+    window.sessionStorage.setItem("pm.authenticated", "true");
+    window.sessionStorage.setItem("pm.username", "user");
+
+    render(<AuthGate />);
+
+    expect(await screen.findByRole("heading", { name: "Kanban Studio" })).toBeInTheDocument();
+    expect(screen.getByText("Signed in as user")).toBeInTheDocument();
+  });
+
   it("returns to login after logout", async () => {
     render(<AuthGate />);
     await screen.findByRole("heading", { name: "Sign in" });

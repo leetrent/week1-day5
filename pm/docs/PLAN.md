@@ -59,24 +59,24 @@
 Create a detailed implementation plan for Parts 2-10, define test strategy per part, and create `frontend/AGENTS.md` describing the existing frontend codebase.
 
 ### Checklist
-- [ ] Review current repo structure and existing frontend implementation
-- [ ] Expand this file with actionable checklist tasks, tests, and success criteria for each part
-- [ ] Draft `frontend/AGENTS.md` that documents:
+- [x] Review current repo structure and existing frontend implementation
+- [x] Expand this file with actionable checklist tasks, tests, and success criteria for each part
+- [x] Draft `frontend/AGENTS.md` that documents:
   - current architecture and folder structure
   - state management approach
   - existing Kanban/card drag-drop behavior
   - current AI chat UI behavior (frontend-only demo status)
   - known limitations and assumptions
-- [ ] Present plan and `frontend/AGENTS.md` to user for explicit sign-off
-- [ ] Do not begin Part 2 until sign-off is granted
+- [x] Present plan and `frontend/AGENTS.md` to user for explicit sign-off
+- [x] Do not begin Part 2 until sign-off is granted
 
 ### Tests
-- [ ] Manual review for completeness against all requirements in root `AGENTS.md`
-- [ ] Ensure every part includes concrete implementation steps, validation steps, and pass/fail criteria
+- [x] Manual review for completeness against all requirements in root `AGENTS.md`
+- [x] Ensure every part includes concrete implementation steps, validation steps, and pass/fail criteria
 
 ### Success criteria
-- [ ] User confirms plan is approved
-- [ ] `frontend/AGENTS.md` exists and accurately describes current frontend code
+- [x] User confirms plan is approved
+- [x] `frontend/AGENTS.md` exists and accurately describes current frontend code
 
 ## Part 2: Scaffolding
 
@@ -84,27 +84,27 @@ Create a detailed implementation plan for Parts 2-10, define test strategy per p
 Create backend scaffold, Docker packaging, and cross-platform start/stop scripts. Serve static hello-world content and verify one API route.
 
 ### Checklist
-- [ ] Create `backend/` FastAPI app with:
+- [x] Create `backend/` FastAPI app with:
   - app entrypoint
   - health endpoint
   - example API endpoint for JSON response
-- [ ] Create Dockerfile using Python + `uv` dependency workflow
-- [ ] Add scripts in `scripts/` for Mac, Linux, and Windows:
+- [x] Create Dockerfile using Python + `uv` dependency workflow
+- [x] Add scripts in `scripts/` for Mac, Linux, and Windows:
   - start script
   - stop script
-- [ ] Wire static hello-world page serving from FastAPI
-- [ ] Confirm app starts in Docker and can serve both static HTML and API response
+- [x] Wire static hello-world page serving from FastAPI
+- [x] Confirm app starts in Docker and can serve both static HTML and API response
 
 ### Tests
-- [ ] Container build succeeds
-- [ ] Start script launches container/service without manual intervention
-- [ ] `GET /` returns hello-world HTML
-- [ ] Example API endpoint returns expected JSON and HTTP 200
-- [ ] Stop script cleanly stops service/container
+- [x] Container build succeeds
+- [x] Start script launches container/service without manual intervention
+- [x] `GET /` returns hello-world HTML
+- [x] Example API endpoint returns expected JSON and HTTP 200
+- [x] Stop script cleanly stops service/container
 
 ### Success criteria
-- [ ] One-command local startup works on each OS script target
-- [ ] Browser can load root page and API call completes successfully
+- [x] One-command local startup works on each OS script target
+- [x] Browser can load root page and API call completes successfully
 
 ## Part 3: Add in Frontend
 
@@ -112,22 +112,22 @@ Create backend scaffold, Docker packaging, and cross-platform start/stop scripts
 Build and serve existing Next.js frontend statically through backend so `/` shows the demo Kanban board.
 
 ### Checklist
-- [ ] Audit frontend build output requirements
-- [ ] Configure static export/build pipeline for frontend artifacts
-- [ ] Integrate build output into backend static serving path
-- [ ] Ensure route handling serves frontend index for root path
-- [ ] Keep Docker workflow compatible with frontend build step
+- [x] Audit frontend build output requirements
+- [x] Configure static export/build pipeline for frontend artifacts
+- [x] Integrate build output into backend static serving path
+- [x] Ensure route handling serves frontend index for root path
+- [x] Keep Docker workflow compatible with frontend build step
 
 ### Tests
-- [ ] Frontend build completes without errors
-- [ ] `GET /` renders Kanban UI, not hello-world placeholder
-- [ ] Static assets (JS/CSS) load successfully
-- [ ] Unit tests for key frontend components run and pass
-- [ ] Integration test verifies page render and core board visibility
+- [x] Frontend build completes without errors
+- [x] `GET /` renders Kanban UI, not hello-world placeholder
+- [x] Static assets (JS/CSS) load successfully
+- [x] Unit tests for key frontend components run and pass
+- [x] Integration test verifies page render and core board visibility
 
 ### Success criteria
-- [ ] Demo Kanban board is visible at `/` in containerized run
-- [ ] No regressions in existing frontend behavior
+- [x] Demo Kanban board is visible at `/` in containerized run
+- [x] No regressions in existing frontend behavior
 
 ### Part 3 manual verification (Pass/Fail)
 
@@ -154,22 +154,22 @@ Build and serve existing Next.js frontend statically through backend so `/` show
 Add a simple login/logout flow using fixed credentials (`user` / `password`) and gate Kanban access.
 
 ### Checklist
-- [ ] Add login UI at initial entry to `/`
-- [ ] Implement credential validation against hardcoded values
-- [ ] Add authenticated session state (simple MVP mechanism)
-- [ ] Protect board view so unauthenticated users cannot access it
-- [ ] Add logout action and session clear behavior
+- [x] Add login UI at initial entry to `/`
+- [x] Implement credential validation against hardcoded values
+- [x] Add authenticated session state (simple MVP mechanism)
+- [x] Protect board view so unauthenticated users cannot access it
+- [x] Add logout action and session clear behavior
 
 ### Tests
-- [ ] Invalid credentials are rejected with clear error message
-- [ ] Valid credentials show the Kanban board
-- [ ] Authenticated refresh behavior matches intended MVP session design
-- [ ] Logout returns user to login view
-- [ ] Frontend unit/integration tests cover login, guard, and logout paths
+- [x] Invalid credentials are rejected with clear error message
+- [x] Valid credentials show the Kanban board
+- [x] Authenticated refresh behavior matches intended MVP session design
+- [x] Logout returns user to login view
+- [x] Frontend unit/integration tests cover login, guard, and logout paths
 
 ### Success criteria
-- [ ] Unauthenticated users cannot access Kanban UI
-- [ ] Login and logout behavior is stable and repeatable
+- [x] Unauthenticated users cannot access Kanban UI
+- [x] Login and logout behavior is stable and repeatable
 
 ### Part 4 manual verification (Pass/Fail)
 
@@ -234,23 +234,23 @@ Define SQLite schema for users + per-user board data persisted as JSON; document
 Design artifact: `docs/DATABASE_SCHEMA.md`
 
 ### Checklist
-- [ ] Propose schema tables and columns for:
+- [x] Propose schema tables and columns for:
   - users (future multi-user support)
   - board state storage (JSON payload)
   - timestamps/versioning metadata
-- [ ] Define JSON structure for board columns/cards compatible with frontend model
-- [ ] Document migration/creation approach when DB file is absent
-- [ ] Write design doc in `docs/` with trade-offs and rationale
-- [ ] Request explicit user sign-off before implementing Part 6
+- [x] Define JSON structure for board columns/cards compatible with frontend model
+- [x] Document migration/creation approach when DB file is absent
+- [x] Write design doc in `docs/` with trade-offs and rationale
+- [x] Request explicit user sign-off before implementing Part 6
 
 ### Tests
-- [ ] Validate schema can represent required board operations (rename column, edit card, move card)
-- [ ] Validate one board per user constraint in MVP logic
-- [ ] Peer-style review checklist against root `AGENTS.md` requirements
+- [x] Validate schema can represent required board operations (rename column, edit card, move card)
+- [x] Validate one board per user constraint in MVP logic
+- [x] Peer-style review checklist against root `AGENTS.md` requirements
 
 ### Success criteria
-- [ ] User approves schema and documentation
-- [ ] JSON structure and schema are implementation-ready
+- [x] User approves schema and documentation
+- [x] JSON structure and schema are implementation-ready
 
 ## Part 6: Backend
 
@@ -258,21 +258,21 @@ Design artifact: `docs/DATABASE_SCHEMA.md`
 Implement backend API for reading/updating Kanban per user with auto-creation of SQLite DB when missing.
 
 ### Checklist
-- [ ] Add DB initialization on startup (create file/tables if missing)
-- [ ] Implement API endpoints for board read/update operations
-- [ ] Add request/response validation models
-- [ ] Add service layer logic for per-user board retrieval and persistence
-- [ ] Handle expected errors with clear HTTP responses
+- [x] Add DB initialization on startup (create file/tables if missing)
+- [x] Implement API endpoints for board read/update operations
+- [x] Add request/response validation models
+- [x] Add service layer logic for per-user board retrieval and persistence
+- [x] Handle expected errors with clear HTTP responses
 
 ### Tests
-- [ ] Backend unit tests for DB initialization and CRUD logic
-- [ ] Endpoint tests for success and invalid input scenarios
-- [ ] Verify board data persists across server restarts
-- [ ] Verify isolated user board access behavior
+- [x] Backend unit tests for DB initialization and CRUD logic
+- [x] Endpoint tests for success and invalid input scenarios
+- [x] Verify board data persists across server restarts
+- [x] Verify isolated user board access behavior
 
 ### Success criteria
-- [ ] API supports complete board lifecycle operations required by frontend
-- [ ] Database reliably initializes and persists data
+- [x] API supports complete board lifecycle operations required by frontend
+- [x] Database reliably initializes and persists data
 
 ### Part 6 manual verification (Pass/Fail)
 
@@ -363,7 +363,7 @@ Connect frontend board operations to backend API and make Kanban persistent.
 - [x] Integration tests for initial board load from API
 - [x] Integration tests for card edits/moves and column rename persistence
 - [x] Verify state remains after refresh and restart
-- [ ] Negative-path tests for API failures and retry/feedback behavior
+- [x] Negative-path tests for API failures and retry/feedback behavior
 
 ### Success criteria
 - [x] Board state is persisted and restored correctly
@@ -385,9 +385,18 @@ Design decisions update:
 - No new design decisions were introduced during this verification pass.
 - Existing Part 7 implementation remains: optimistic local UI updates with backend sync and user-visible sync/error status in the board header.
 
-**Part 7 current status:** Pass (with one remaining test-hardening item for explicit API failure-path retries/feedback assertions)  
-**Tester:** Copilot agent (automated checks)  
-**Date:** 2026-10-25
+### Part 7 failure-path tests (2026-10-29)
+
+| Check | Expected result | Status (Pass/Fail) | Notes |
+|---|---|---|---|
+| Load failure | Error message shown, local board still rendered | Pass | `KanbanBoard.test.tsx`: `shows an error and keeps the local board when loading fails` |
+| Save failure and retry | Error message shown, local edit kept, error cleared after next successful save | Pass | `KanbanBoard.test.tsx`: `shows an error when saving fails and clears it after a successful retry` |
+| AI request failure | Chat error shown, board unchanged | Pass | `KanbanBoard.test.tsx`: `shows a chat error when the AI request fails and leaves the board unchanged` |
+| Full suite | Backend, frontend unit, e2e, lint, and build pass | Pass | 26 backend, 16 unit, 7 e2e passed; lint clean |
+
+**Part 7 final status:** Pass  
+**Tester:** Claude Code (automated checks)  
+**Date:** 2026-10-29
 
 ## Part 8: AI connectivity
 
@@ -507,8 +516,8 @@ Add full sidebar chat experience in frontend, display AI responses, and refresh 
 
 ## Cross-part quality gates
 
-- [ ] Keep implementation aligned with root `AGENTS.md` as source of truth
-- [ ] Keep scope limited to MVP requirements
-- [ ] Add/update tests with each part before marking done
-- [ ] Validate behavior in local Docker run after each major part
-- [ ] Keep docs in `docs/` current as architecture evolves
+- [x] Keep implementation aligned with root `AGENTS.md` as source of truth
+- [x] Keep scope limited to MVP requirements
+- [x] Add/update tests with each part before marking done
+- [x] Validate behavior in local Docker run after each major part
+- [x] Keep docs in `docs/` current as architecture evolves

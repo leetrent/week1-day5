@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState, useSyncExternalStore } from "react";
 import { KanbanBoard } from "@/components/KanbanBoard";
 
 const AUTH_STORAGE_KEY = "pm.authenticated";
@@ -8,28 +8,48 @@ const AUTH_USERNAME_KEY = "pm.username";
 const VALID_USERNAME = "user";
 const VALID_PASSWORD = "password";
 
+const sessionListeners = new Set<() => void>();
+
+const subscribeSession = (listener: () => void) => {
+  sessionListeners.add(listener);
+  return () => {
+    sessionListeners.delete(listener);
+  };
+};
+
+const getSessionUsername = () =>
+  window.sessionStorage.getItem(AUTH_STORAGE_KEY) === "true"
+    ? window.sessionStorage.getItem(AUTH_USERNAME_KEY) || VALID_USERNAME
+    : null;
+
+const getServerSessionUsername = () => null;
+
+const setSessionUsername = (username: string | null) => {
+  if (username) {
+    window.sessionStorage.setItem(AUTH_STORAGE_KEY, "true");
+    window.sessionStorage.setItem(AUTH_USERNAME_KEY, username);
+  } else {
+    window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
+    window.sessionStorage.removeItem(AUTH_USERNAME_KEY);
+  }
+  sessionListeners.forEach((listener) => listener());
+};
+
 export const AuthGate = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [activeUsername, setActiveUsername] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    const hasSession = window.sessionStorage.getItem(AUTH_STORAGE_KEY) === "true";
-    const storedUsername = window.sessionStorage.getItem(AUTH_USERNAME_KEY);
-    setIsAuthenticated(hasSession);
-    setActiveUsername(hasSession ? storedUsername || VALID_USERNAME : null);
-  }, []);
+  const activeUsername = useSyncExternalStore(
+    subscribeSession,
+    getSessionUsername,
+    getServerSessionUsername
+  );
 
   const handleLogin = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (username === VALID_USERNAME && password === VALID_PASSWORD) {
-      window.sessionStorage.setItem(AUTH_STORAGE_KEY, "true");
-      window.sessionStorage.setItem(AUTH_USERNAME_KEY, username);
-      setIsAuthenticated(true);
-      setActiveUsername(username);
+      setSessionUsername(username);
       setError(null);
       setPassword("");
       return;
@@ -39,16 +59,13 @@ export const AuthGate = () => {
   };
 
   const handleLogout = () => {
-    window.sessionStorage.removeItem(AUTH_STORAGE_KEY);
-    window.sessionStorage.removeItem(AUTH_USERNAME_KEY);
-    setIsAuthenticated(false);
-    setActiveUsername(null);
+    setSessionUsername(null);
     setUsername("");
     setPassword("");
     setError(null);
   };
 
-  if (!isAuthenticated) {
+  if (!activeUsername) {
     return (
       <main className="mx-auto flex min-h-screen max-w-xl items-center px-6">
         <section className="w-full rounded-3xl border border-[var(--stroke)] bg-white p-8 shadow-[var(--shadow)]">
@@ -115,7 +132,7 @@ export const AuthGate = () => {
       <div className="sticky top-0 z-20 border-b border-[var(--stroke)] bg-white/95 backdrop-blur">
         <div className="mx-auto flex max-w-[1500px] items-center justify-between px-6 py-3">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--gray-text)]">
-            Signed in as {activeUsername ?? VALID_USERNAME}
+            Signed in as {activeUsername}
           </p>
           <button
             type="button"
@@ -126,7 +143,7 @@ export const AuthGate = () => {
           </button>
         </div>
       </div>
-      <KanbanBoard username={activeUsername ?? VALID_USERNAME} />
+      <KanbanBoard username={activeUsername} />
     </div>
   );
 };

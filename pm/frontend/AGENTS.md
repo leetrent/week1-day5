@@ -32,8 +32,8 @@ This document describes the current state of the frontend in `frontend/` after b
   - `kanban.ts`: board/card/column types, seed data, drag move logic, ID generation.
 - `tests/`
   - `kanban.spec.ts`: Playwright flows for auth, board interactions, and persistence behavior.
-- `src/components/AuthGate.test.tsx`: unit tests for login and logout.
-- `src/components/KanbanBoard.test.tsx`: unit tests for rendering, rename, add/remove card.
+- `src/components/AuthGate.test.tsx`: unit tests for login, logout, and session restore.
+- `src/components/KanbanBoard.test.tsx`: unit tests for rendering, rename, add/remove card, AI chat, and API failure paths (load, save + retry, AI).
 - `src/lib/kanban.test.ts`: unit tests for move logic.
 
 ## State management and data model
