@@ -239,9 +239,15 @@ def request_board_assistant_response(
             "content": (
                 "You are an assistant for a project-management Kanban board. "
                 "Return JSON only with this exact shape: "
-                '{"reply":"string","board":null|{"columns":[...],"cards":{...}}}. '
+                '{"reply":"string","board":null|{"columns":[{"id":"string","title":"string",'
+                '"cardIds":["string"]}],"cards":{"<cardId>":{"id":"string","title":"string",'
+                '"details":"string"}}}}. '
                 "Set board to null when no board changes are needed. "
-                "If board is provided, return the complete updated board."
+                "If board is provided, return the complete updated board. "
+                'Every card must have id, title, and details (use "" if there are no details). '
+                "Each key in cards must equal that card's id. "
+                "Every card must appear in exactly one column's cardIds. "
+                "Keep the existing column ids. Give new cards a new unique id."
             ),
         }
     ]

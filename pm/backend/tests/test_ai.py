@@ -175,6 +175,33 @@ def test_request_board_assistant_response_rejects_invalid_board_integrity(monkey
         )
 
 
+def test_request_board_assistant_response_prompt_defines_card_fields(monkeypatch):
+    monkeypatch.setenv("OPENROUTER_API_KEY", "test-key")
+    sent_bodies: list[bytes] = []
+
+    def fake_urlopen(req, **__):
+        sent_bodies.append(req.data)
+        return _FakeResponse(json_bytes({"reply": "Ok.", "board": None}))
+
+    monkeypatch.setattr("app.ai.request.urlopen", fake_urlopen)
+    empty_board = Board.model_validate(DEFAULT_BOARD).model_copy(deep=True)
+    empty_board.cards = {}
+    for column in empty_board.columns:
+        column.cardIds = []
+
+    request_board_assistant_response(
+        board=empty_board,
+        user_message="Add a card titled Test card to Backlog.",
+        conversation_history=[],
+    )
+
+    import json
+
+    system_prompt = json.loads(sent_bodies[0])["messages"][0]["content"]
+    assert '"cards":{"<cardId>":{"id":"string","title":"string","details":"string"}}' in system_prompt
+    assert "Every card must have id, title, and details" in system_prompt
+
+
 def json_bytes(payload: dict[str, object]) -> bytes:
     import json
 
