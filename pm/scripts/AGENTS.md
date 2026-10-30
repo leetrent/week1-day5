@@ -18,4 +18,8 @@ This folder contains Docker start/stop scripts for each target OS.
 - Start scripts require a root `.env` file and pass it to Docker using
   `--env-file` so backend environment variables (including OpenRouter config)
   are available in the container.
-- Stop scripts stop and remove `pm-mvp-app` if it exists.
+- Start scripts mount the named volume `pm-data` at `/app/backend/data`, so the
+  SQLite database survives container restarts and image rebuilds.
+- Stop scripts stop and remove `pm-mvp-app` if it exists. They do not remove
+  the `pm-data` volume. To reset all data, run `docker volume rm pm-data`
+  while the container is stopped.

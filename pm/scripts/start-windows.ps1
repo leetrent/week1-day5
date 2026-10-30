@@ -3,6 +3,7 @@ $ErrorActionPreference = "Stop"
 $imageName = "pm-mvp"
 $containerName = "pm-mvp-app"
 $port = "8000"
+$volumeName = "pm-data"
 $envFile = Join-Path (Get-Location) ".env"
 
 if (-not (Test-Path $envFile)) {
@@ -25,7 +26,7 @@ if ($existing) {
   }
 }
 
-docker run -d --name $containerName --env-file $envFile -p "$port`:8000" $imageName | Out-Null
+docker run -d --name $containerName --env-file $envFile -p "$port`:8000" -v "$volumeName`:/app/backend/data" $imageName | Out-Null
 if ($LASTEXITCODE -ne 0) {
   throw "Docker run failed."
 }
